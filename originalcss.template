@@ -1,0 +1,140 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This creates a S3 bucket and two AMI roles, one Role is assumed by an EC2 that can do anything to the bucket at ManageFullyS3Perms AND the other Role is assumed by an EC2 instance that can read and write to the same bucket at ReadWriteOnS3Perms. Using the same instance Settings, one can attach/replace IAM Role",
+	
+    "Parameters": {
+       "BucketNameField": {
+	   "Description" : "This field is required and must be unique across all existing bucket names.",
+            "Type": "String"
+			
+        }
+    },
+    "Resources": {
+        "ReadWriteOnS3Bucket": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/"
+            }
+        },
+        "ManageFullyS3Bucket": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/"
+            }
+        },
+        "ReadWriteOnS3Policies": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "ReadWriteOnS3Perms",
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:ListBucket"
+                            ],
+                            "Resource": "*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:PutObject",
+                                "s3:GetObject"
+                            ],
+                            "Resource": { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "BucketNameField" } , "/*" ]]}
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "ReadWriteOnS3Bucket"
+                    }
+                ]
+            }
+        },
+        "ManageFullyS3Policies": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "ManageFullyS3Perms",
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": "s3:*",
+                           "Resource": { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "BucketNameField" } , "/*" ]]}
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "ManageFullyS3Bucket"
+                    }
+                ]
+            }
+        },
+        "Ec2ServerInstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "ManageFullyS3Bucket"
+                    }
+                ]
+            }
+        },
+        "LambdaFunctionProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "ReadWriteOnS3Bucket"
+                    }
+                ]
+            }
+        },
+      "ChosenBucket": {
+           
+            "Properties": {
+                "BucketName": {
+                    "Ref": "BucketNameField"
+                }
+                
+               
+            },
+            "Type": "AWS::S3::Bucket"
+        }
+   
+    }
+}

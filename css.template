@@ -1,0 +1,301 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This creates a S3 bucket and two AMI roles, one Role is assumed by an EC2 that can do anything to the bucket at ManageFullyS3Perms AND the other Role is assumed by an EC2 instance that can read and write to the same bucket at ReadWriteOnS3Perms. Using the same instance Settings, one can attach/replace IAM Role",
+    "Parameters": {
+        "BucketNameField": {
+            "Description": "This field is required and must be unique across all existing bucket names.",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "ReadWriteOnS3Bucket": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "f066e352-aedf-4984-b38d-01e66b7bcbc0"
+                }
+            }
+        },
+        "ManageFullyS3Bucket": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "530410dc-b457-4c28-8b5f-dac23932ca66"
+                }
+            }
+        },
+        "ReadWriteOnS3Policies": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "ReadWriteOnS3Perms",
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:ListBucket"
+                            ],
+                           "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:s3:::",
+                                        {
+                                            "Ref": "BucketNameField"
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:PutObject",
+                                "s3:GetObject"
+                            ],
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:s3:::",
+                                        {
+                                            "Ref": "BucketNameField"
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "ReadWriteOnS3Bucket"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "4c801270-42e9-4c05-82fe-66a8d7ba5919"
+                }
+            }
+        },
+        "ManageFullyS3Policies": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "ManageFullyS3Perms",
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": "s3:*",
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:s3:::",
+                                        {
+                                            "Ref": "BucketNameField"
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "ManageFullyS3Bucket"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "cd4332b9-ea5b-41d1-bdf9-d9a1f9a223ec"
+                }
+            }
+        },
+        "Ec2ManageFullyS3Profile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "ManageFullyS3Bucket"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "3d97b828-09cd-4dcc-8c36-d242bbd52342"
+                }
+            }
+        },
+        "Ec2ReadWriteOnS3Profile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "ReadWriteOnS3Bucket"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "e87d74cb-8607-47bf-9ee1-283f3625a9a4"
+                }
+            }
+        },
+        "ChosenBucket": {
+            "Properties": {
+                "BucketName": {
+                    "Ref": "BucketNameField"
+                }
+            },
+            "Type": "AWS::S3::Bucket",
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "d8432374-d30b-46c5-b48c-c45b881ec31a"
+                }
+            }
+        }
+    },
+    "Metadata": {
+        "AWS::CloudFormation::Designer": {
+            "d8432374-d30b-46c5-b48c-c45b881ec31a": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 230,
+                    "y": 80
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "530410dc-b457-4c28-8b5f-dac23932ca66": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 430,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "3d97b828-09cd-4dcc-8c36-d242bbd52342": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 170,
+                    "y": 160
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "530410dc-b457-4c28-8b5f-dac23932ca66"
+                ]
+            },
+            "cd4332b9-ea5b-41d1-bdf9-d9a1f9a223ec": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 330,
+                    "y": 200
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "530410dc-b457-4c28-8b5f-dac23932ca66"
+                ]
+            },
+            "f066e352-aedf-4984-b38d-01e66b7bcbc0": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 550,
+                    "y": 80
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "e87d74cb-8607-47bf-9ee1-283f3625a9a4": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 690,
+                    "y": 260
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "f066e352-aedf-4984-b38d-01e66b7bcbc0"
+                ]
+            },
+            "4c801270-42e9-4c05-82fe-66a8d7ba5919": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 190,
+                    "y": 300
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "f066e352-aedf-4984-b38d-01e66b7bcbc0"
+                ]
+            }
+        }
+    }
+}
